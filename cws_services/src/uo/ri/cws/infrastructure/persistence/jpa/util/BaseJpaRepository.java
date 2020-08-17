@@ -1,0 +1,101 @@
+/* 
+ * MIT License
+ * 
+ * Copyright (c) 2019 Alejandro León Pereira
+ * 
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ * 
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ * 
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ */
+package uo.ri.cws.infrastructure.persistence.jpa.util;
+
+import java.lang.reflect.ParameterizedType;
+import java.util.List;
+import java.util.Optional;
+
+/**
+ * The Class BaseJpaRepository.
+ *
+ * @param <T> the generic type
+ */
+public class BaseJpaRepository<T> {
+	
+	/**
+	 * Adds the.
+	 *
+	 * @param t the t
+	 */
+	public void add(T t) {
+		Jpa.getManager().persist( t );
+	}
+
+	/**
+	 * Removes the.
+	 *
+	 * @param t the t
+	 */
+	public void remove(T t) {
+		Jpa.getManager().remove( t );
+	}
+
+	/**
+	 * Find by id.
+	 *
+	 * @param id the id
+	 * @return the optional
+	 */
+	public Optional<T> findById(String id) {
+		T found = Jpa.getManager().find(type, id);
+		return Optional.ofNullable( found );
+	}
+
+	/**
+	 * Find all.
+	 *
+	 * @return the list
+	 */
+	public List<T> findAll() {
+		String entity = type.getName();
+		String query = "select o from " + entity + " o";
+		
+		return Jpa.getManager()
+				.createQuery(query, type)
+				.getResultList();
+	}
+
+	/** As find() and the query "select x from X x" needs the type of the entity here there is a reflective way of getting it. */
+	private Class<T> type;
+
+	/**
+	 * Instantiates a new base jpa repository.
+	 */
+	public BaseJpaRepository() {
+		this.type = hackTheTypeOfGenericParameter();
+	 }
+
+	/**
+	 * This is a hack to recover the runtime reflective type of <T>.
+	 *
+	 * @return the class
+	 */
+	@SuppressWarnings("unchecked")
+	private Class<T> hackTheTypeOfGenericParameter() {
+		ParameterizedType superType = 
+			(ParameterizedType)	getClass().getGenericSuperclass();
+	    return (Class<T>) superType.getActualTypeArguments()[0];
+	}
+	
+}
